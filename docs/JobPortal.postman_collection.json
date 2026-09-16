@@ -1,0 +1,51 @@
+{
+	"info": {
+		"name": "GlobalCo Job Portal API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"candidate1\",\n    \"password\": \"password\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "http://localhost:8080/api/auth/login" }
+					}
+				}
+			]
+		},
+		{
+			"name": "Jobs",
+			"item": [
+				{
+					"name": "Search Jobs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+						],
+						"url": {
+							"raw": "http://localhost:8080/api/jobs?keyword=Java&location=Remote",
+							"host": ["http://localhost:8080"],
+							"path": ["api", "jobs"],
+							"query": [
+								{ "key": "keyword", "value": "Java" },
+								{ "key": "location", "value": "Remote" }
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [],
+	"variable": [ { "key": "jwt_token", "value": "" } ]
+}

@@ -1,0 +1,106 @@
+# ==============================================================================
+# GlobalCo JobBoard — Master Git Ignore Configuration
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Operating System & Cache Files
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# ------------------------------------------------------------------------------
+# Editor & IDE Files
+# ------------------------------------------------------------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+.settings/
+.project
+.classpath
+.factorypath
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+# ------------------------------------------------------------------------------
+# Logs & Diagnostic Files
+# ------------------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------------------------------------------
+# Java & Maven Build Artifacts
+# ------------------------------------------------------------------------------
+**/target/
+!.mvn/wrapper/maven-wrapper.jar
+**/*.class
+hs_err_pid*
+replay_pid*
+
+# ------------------------------------------------------------------------------
+# Frontend (Node, Vite, React) Build Artifacts
+# ------------------------------------------------------------------------------
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.vite/
+*.local
+
+# ------------------------------------------------------------------------------
+# Python & Scratch Artifacts
+# ------------------------------------------------------------------------------
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.pytest_cache/
+
+# ------------------------------------------------------------------------------
+# Office Temporary / Lock Files
+# ------------------------------------------------------------------------------
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# ------------------------------------------------------------------------------
+# Environment Variables & Secrets
+# ------------------------------------------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ------------------------------------------------------------------------------
+# Runtime Uploads & Generated Media Payloads (Keep Directory Structure & Samples)
+# ------------------------------------------------------------------------------
+**/uploads/resumes/*
+!**/uploads/resumes/.gitkeep
+!**/uploads/resumes/sample_*
+**/uploads/verification_docs/*
+!**/uploads/verification_docs/.gitkeep
+!**/uploads/verification_docs/sample_*
