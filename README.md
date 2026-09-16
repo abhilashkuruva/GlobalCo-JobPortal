@@ -80,10 +80,11 @@ A modern, production-ready, full-stack recruitment platform built on **Java 21 +
 
 ```text
 GlobalCo-JobBoard/
-├── .github/                       # GitHub Actions workflows & PR templates
-├── .gitignore                     # Production Git ignore for Java, Node, Python, and OS artifacts
+├── .github/                       # GitHub Actions CI/CD workflows
+│   └── workflows/ci.yml           # Automated Maven test & Vite build pipeline
+├── .gitignore                     # Production Git ignore for Java, Node, and OS artifacts
+├── .env.example                   # Environment variable template for credentials
 ├── README.md                      # Primary project overview, quick start & API directory
-├── Project_Master_Preparation_Notes.docx  # Exhaustive 45+ section Master Viva & Interview Manual
 │
 ├── backend/                       # Java 21 & Spring Boot 3.2.3 Backend API
 │   ├── .gitignore                 # Backend-specific ignore rules

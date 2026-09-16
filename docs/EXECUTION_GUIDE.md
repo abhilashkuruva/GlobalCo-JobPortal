@@ -12,14 +12,14 @@
 
 Commands (run in MySQL client):
 ```sql
-CREATE DATABASE IF NOT EXISTS job_portal_db;
-USE job_portal_db;
-SOURCE db/schema.sql;
-SOURCE db/sample_data.sql;
+CREATE DATABASE IF NOT EXISTS job_board_db;
+USE job_board_db;
+SOURCE database/schema.sql;
+SOURCE database/sample_data.sql;
 ```
 Then load:
-- `db/schema.sql`
-- `db/sample_data.sql`
+- `database/schema.sql`
+- `database/sample_data.sql`
 
 ## 3) Backend Commands
 From repository root:
@@ -48,7 +48,7 @@ mvn -q test
 
 ## 6) Verification Queries (MySQL)
 ```sql
-USE job_portal_db;
+USE job_board_db;
 SELECT COUNT(*) FROM users;
 SELECT COUNT(*) FROM jobs;
 SELECT COUNT(*) FROM applications;
