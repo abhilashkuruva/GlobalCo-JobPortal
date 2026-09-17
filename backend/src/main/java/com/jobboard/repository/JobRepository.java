@@ -17,14 +17,14 @@ import java.util.List;
 public interface JobRepository extends JpaRepository<Job, Long> {
 
     @EntityGraph(attributePaths = {"company", "category", "skills"})
-    @Query("SELECT j FROM Job j WHERE j.status IN ('ACTIVE', 'APPROVED', 'PUBLISHED') AND (:status IS NULL OR :status IS NOT NULL) " +
-           "AND (:keyword IS NULL OR LOWER(j.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "     OR LOWER(j.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "     OR LOWER(j.company.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND (:location IS NULL OR LOWER(j.location) LIKE LOWER(CONCAT('%', :location, '%'))) " +
+    @Query("SELECT j FROM Job j WHERE j.status IN ('ACTIVE', 'APPROVED', 'PUBLISHED') " +
+           "AND (:keyword IS NULL OR LOWER(j.title) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
+           "     OR LOWER(j.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) " +
+           "     OR LOWER(j.company.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
+           "AND (:location IS NULL OR LOWER(j.location) LIKE LOWER(CONCAT('%', CAST(:location AS string), '%'))) " +
            "AND (:minExp IS NULL OR j.experienceRequired >= :minExp) " +
-           "AND (:workMode IS NULL OR LOWER(j.workMode) = LOWER(:workMode)) " +
-           "AND (:categoryName IS NULL OR LOWER(j.category.name) = LOWER(:categoryName))")
+           "AND (:workMode IS NULL OR LOWER(j.workMode) = LOWER(CAST(:workMode AS string))) " +
+           "AND (:categoryName IS NULL OR LOWER(j.category.name) = LOWER(CAST(:categoryName AS string)))")
     Page<Job> searchJobsAdvanced(
             @Param("status") String status,
             @Param("keyword") String keyword,
@@ -35,9 +35,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             Pageable pageable);
 
     @EntityGraph(attributePaths = {"company", "category", "skills"})
-    @Query("SELECT j FROM Job j WHERE j.status IN ('ACTIVE', 'APPROVED', 'PUBLISHED') AND (:status IS NULL OR :status IS NOT NULL) " +
-           "AND (:title IS NULL OR LOWER(j.title) LIKE LOWER(CONCAT('%', :title, '%')) OR LOWER(j.description) LIKE LOWER(CONCAT('%', :title, '%'))) " +
-           "AND (:location IS NULL OR LOWER(j.location) LIKE LOWER(CONCAT('%', :location, '%'))) " +
+    @Query("SELECT j FROM Job j WHERE j.status IN ('ACTIVE', 'APPROVED', 'PUBLISHED') " +
+           "AND (:title IS NULL OR LOWER(j.title) LIKE LOWER(CONCAT('%', CAST(:title AS string), '%')) OR LOWER(j.description) LIKE LOWER(CONCAT('%', CAST(:title AS string), '%'))) " +
+           "AND (:location IS NULL OR LOWER(j.location) LIKE LOWER(CONCAT('%', CAST(:location AS string), '%'))) " +
            "AND (:minExp IS NULL OR j.experienceRequired >= :minExp)")
     Page<Job> searchJobs(@Param("status") String status, 
                         @Param("title") String title, 

@@ -18,7 +18,7 @@ public class Job {
     @Column(nullable = false)
     private String title;
 
-    @Column(length = 4000)
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     private String location;
@@ -30,13 +30,13 @@ public class Job {
     private String industry;
     private String applicationDeadline;
 
-    @Column(length = 3000)
+    @Column(columnDefinition = "TEXT")
     private String responsibilities;
 
-    @Column(length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String benefits;
 
-    @Column(length = 1000)
+    @Column(columnDefinition = "TEXT")
     private String educationRequirements;
 
     private String status = "APPROVED"; // PENDING, APPROVED, REJECTED, CLOSED, EXPIRED
