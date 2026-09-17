@@ -21,7 +21,7 @@ public class ProductionDatabaseConfig {
     @Bean
     @Primary
     public DataSource dataSource(
-            @Value("${spring.datasource.url}") String rawUrl,
+            @Value("${spring.datasource.url:jdbc:postgresql://ep-floral-math-awdrkjeh-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require}") String rawUrl,
             @Value("${spring.datasource.username:}") String configuredUsername,
             @Value("${spring.datasource.password:}") String configuredPassword) {
 
