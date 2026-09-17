@@ -5,6 +5,7 @@ import com.jobboard.repository.*;
 import com.jobboard.service.AdminService;
 import com.jobboard.service.AuditLogService;
 import com.jobboard.service.JobService;
+import com.jobboard.service.FileStorageService;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 @RestController
@@ -30,8 +30,7 @@ public class AdminController {
     private final AdminService adminService;
     private final AuditLogService auditLogService;
     private final JobService jobService;
-    private final com.jobboard.service.FileStorageService fileStorageService;
-    private final String VERIFICATION_DOCS_DIR = "uploads/verification_docs/";
+    private final FileStorageService fileStorageService;
 
     public AdminController(UserRepository userRepository,
                            JobRepository jobRepository,
@@ -40,7 +39,7 @@ public class AdminController {
                            AdminService adminService,
                            AuditLogService auditLogService,
                            JobService jobService,
-                           com.jobboard.service.FileStorageService fileStorageService) {
+                           FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.jobRepository = jobRepository;
         this.applicationRepository = applicationRepository;
@@ -97,13 +96,7 @@ public class AdminController {
             return ResponseEntity.badRequest().build();
         }
 
-        Path basePath = Paths.get(VERIFICATION_DOCS_DIR).toAbsolutePath().normalize();
-        Path filePath = fileStorageService.resolveAndEnsureFile(VERIFICATION_DOCS_DIR, decodedFileName);
-
-        // Ensure the resolved path is still inside our allowed directory
-        if (!filePath.startsWith(basePath)) {
-            return ResponseEntity.status(403).build();
-        }
+        Path filePath = fileStorageService.resolveVerificationDocument(decodedFileName);
 
         if (!Files.exists(filePath)) {
             return ResponseEntity.notFound().build();

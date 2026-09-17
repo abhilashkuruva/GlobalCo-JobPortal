@@ -4,6 +4,7 @@ import com.jobboard.entity.Application;
 import com.jobboard.entity.User;
 import com.jobboard.repository.UserRepository;
 import com.jobboard.service.ApplicationService;
+import com.jobboard.service.FileStorageService;
 import com.jobboard.service.JobService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,13 +23,16 @@ public class ApplicationController {
     private final ApplicationService applicationService;
     private final JobService jobService;
     private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
 
     public ApplicationController(ApplicationService applicationService,
                                  JobService jobService,
-                                 UserRepository userRepository) {
+                                 UserRepository userRepository,
+                                 FileStorageService fileStorageService) {
         this.applicationService = applicationService;
         this.jobService = jobService;
         this.userRepository = userRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     private User getCurrentUser() {
@@ -99,10 +103,7 @@ public class ApplicationController {
             }
 
             try {
-                String cleanName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
-                String savedFileName = java.util.UUID.randomUUID().toString().substring(0, 8) + "_" + cleanName;
-                java.nio.file.Path targetPath = java.nio.file.Paths.get("uploads/resumes/").resolve(savedFileName);
-                java.nio.file.Files.copy(resume.getInputStream(), targetPath);
+                String savedFileName = fileStorageService.storeResume(resume);
                 customResumeUrl = "/api/resumes/view/" + savedFileName;
                 customResumeFileName = originalName;
             } catch (java.io.IOException e) {

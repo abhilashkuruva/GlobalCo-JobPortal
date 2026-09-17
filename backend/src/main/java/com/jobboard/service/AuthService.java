@@ -20,9 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 @Service
@@ -39,9 +36,6 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final ResumeParserService resumeParserService;
     private final FileStorageService fileStorageService;
-
-    private final String RESUME_DIR = "uploads/resumes/";
-    private final String VERIFICATION_DOCS_DIR = "uploads/verification_docs/";
 
     public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
@@ -65,13 +59,6 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
         this.resumeParserService = resumeParserService;
         this.fileStorageService = fileStorageService;
-
-        try {
-            Files.createDirectories(Paths.get(RESUME_DIR));
-            Files.createDirectories(Paths.get(VERIFICATION_DOCS_DIR));
-        } catch (IOException e) {
-            System.err.println("Warning: Could not create upload directories: " + e.getMessage());
-        }
     }
 
     @Transactional
@@ -206,9 +193,7 @@ public class AuthService {
             throw new RuntimeException("Resume file size exceeds maximum limit of 15MB.");
         }
 
-        String cleanName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
-        String savedFileName = UUID.randomUUID().toString().substring(0, 8) + "_" + cleanName;
-        fileStorageService.saveDocument(RESUME_DIR, savedFileName, originalName, "RESUME", resumeFile.getContentType(), resumeFile.getBytes());
+        String savedFileName = fileStorageService.storeResume(resumeFile);
 
         User user = new User();
         String fName = fullName != null ? fullName.trim() : "";
@@ -304,18 +289,13 @@ public class AuthService {
         if (userRepository.existsByEmail(email)) { throw new RuntimeException("A recruiter account with this email already exists."); }
         if (userRepository.existsByUsername(username)) { throw new RuntimeException("Username already taken. Please choose a different username."); }
 
-        // Ensure uploads directory exists
-        Files.createDirectories(Paths.get(VERIFICATION_DOCS_DIR));
-
         // Save identity document if provided
         String identityPath = null;
         String identityName = null;
         if (identityProof != null && !identityProof.isEmpty()) {
             validateDocumentFile(identityProof);
             identityName = identityProof.getOriginalFilename();
-            String clean = identityName != null ? identityName.replaceAll("[^a-zA-Z0-9._-]", "_") : "identity.pdf";
-            String savedIdName = UUID.randomUUID().toString().substring(0, 8) + "_" + clean;
-            fileStorageService.saveDocument(VERIFICATION_DOCS_DIR, savedIdName, identityName, "IDENTITY_PROOF", identityProof.getContentType(), identityProof.getBytes());
+            String savedIdName = fileStorageService.storeVerificationDocument(identityProof);
             identityPath = "/api/admin/recruiter-requests/document/identity/" + savedIdName;
         }
 
@@ -325,9 +305,7 @@ public class AuthService {
         if (companyProof != null && !companyProof.isEmpty()) {
             validateDocumentFile(companyProof);
             companyProofName = companyProof.getOriginalFilename();
-            String clean = companyProofName != null ? companyProofName.replaceAll("[^a-zA-Z0-9._-]", "_") : "company_proof.pdf";
-            String savedProofName = UUID.randomUUID().toString().substring(0, 8) + "_" + clean;
-            fileStorageService.saveDocument(VERIFICATION_DOCS_DIR, savedProofName, companyProofName, "COMPANY_PROOF", companyProof.getContentType(), companyProof.getBytes());
+            String savedProofName = fileStorageService.storeVerificationDocument(companyProof);
             companyProofPath = "/api/admin/recruiter-requests/document/company/" + savedProofName;
         }
 

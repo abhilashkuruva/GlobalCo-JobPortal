@@ -6,7 +6,7 @@ import {
   Phone, Mail, Briefcase
 } from 'lucide-react';
 import { getAllJobSeekers } from '../../services/adminApi';
-import { BACKEND_URL } from '../../services/api';
+import { openAuthorizedFile } from '../../services/fileApi';
 
 function StatusBadge({ status, enabled }) {
   const s = status || (enabled !== false ? 'APPROVED' : 'SUSPENDED');
@@ -231,14 +231,13 @@ export default function AdminJobSeekerPage() {
                       </td>
                       <td className="px-4 py-3">
                         {s.resumeUrl ? (
-                          <a
-                            href={`${BACKEND_URL}${s.resumeUrl}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => openAuthorizedFile(s.resumeUrl).catch(() => alert('Unable to open this resume.'))}
                             className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline text-[10px] font-medium"
                           >
                             <FileText size={12} /> View
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-[10px] text-slate-400 italic">Not uploaded</span>
                         )}
@@ -324,15 +323,14 @@ export default function AdminJobSeekerPage() {
                 {selectedSeeker.resumeUrl && (
                   <div>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Resume</p>
-                    <a
-                      href={`${BACKEND_URL}${selectedSeeker.resumeUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => openAuthorizedFile(selectedSeeker.resumeUrl).catch(() => alert('Unable to open this resume.'))}
                       className="inline-flex items-center gap-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded hover:bg-blue-100 transition-colors"
                     >
                       <FileText size={13} />
                       {selectedSeeker.resumeFileName || 'Download Resume'}
-                    </a>
+                    </button>
                   </div>
                 )}
               </div>

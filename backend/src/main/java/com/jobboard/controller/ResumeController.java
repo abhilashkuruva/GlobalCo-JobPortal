@@ -1,26 +1,25 @@
 package com.jobboard.controller;
 
-import com.jobboard.entity.CandidateProfile;
+import com.jobboard.entity.Application;
 import com.jobboard.entity.User;
+import com.jobboard.repository.ApplicationRepository;
 import com.jobboard.repository.UserRepository;
 import com.jobboard.service.CandidateProfileService;
+import com.jobboard.service.FileStorageService;
 import com.jobboard.service.ResumeParserService;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/resumes")
@@ -29,16 +28,18 @@ public class ResumeController {
     private final CandidateProfileService profileService;
     private final UserRepository userRepository;
     private final ResumeParserService resumeParserService;
-    private final com.jobboard.service.FileStorageService fileStorageService;
-    private final String UPLOAD_DIR = "uploads/resumes/";
+    private final FileStorageService fileStorageService;
+    private final ApplicationRepository applicationRepository;
 
     public ResumeController(CandidateProfileService profileService, UserRepository userRepository,
                             ResumeParserService resumeParserService,
-                            com.jobboard.service.FileStorageService fileStorageService) {
+                            FileStorageService fileStorageService,
+                            ApplicationRepository applicationRepository) {
         this.profileService = profileService;
         this.userRepository = userRepository;
         this.resumeParserService = resumeParserService;
         this.fileStorageService = fileStorageService;
+        this.applicationRepository = applicationRepository;
     }
 
     private User getCurrentUser() {
@@ -55,9 +56,11 @@ public class ResumeController {
         }
 
         String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "resume.pdf";
-        String cleanName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
-        String fileName = UUID.randomUUID().toString().substring(0, 8) + "_" + cleanName;
-        fileStorageService.saveDocument(UPLOAD_DIR, fileName, originalName, "RESUME", file.getContentType(), file.getBytes());
+        String extension = originalName.contains(".") ? originalName.substring(originalName.lastIndexOf('.')).toLowerCase(Locale.ROOT) : "";
+        if (!List.of(".pdf", ".doc", ".docx").contains(extension) || file.getSize() > 15 * 1024 * 1024) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Upload a PDF, DOC, or DOCX resume no larger than 15MB."));
+        }
+        String fileName = fileStorageService.storeResume(file);
 
         User user = getCurrentUser();
         String resumeUrl = "/api/resumes/view/" + fileName;
@@ -102,30 +105,41 @@ public class ResumeController {
 
     @GetMapping("/view/{fileName}")
     public ResponseEntity<Resource> viewResume(@PathVariable String fileName) throws IOException {
-        String decodedFileName = java.net.URLDecoder.decode(fileName, "UTF-8");
-        if (decodedFileName.contains("..") || decodedFileName.contains("/") || decodedFileName.contains("\\")) {
-            return ResponseEntity.badRequest().build();
+        User user = getCurrentUser();
+        if (!mayViewResume(user, fileName)) {
+            return ResponseEntity.status(403).build();
         }
-
-        Path filePath = fileStorageService.resolveAndEnsureFile(UPLOAD_DIR, decodedFileName);
-        if (!Files.exists(filePath)) {
+        Path filePath = fileStorageService.resolveResume(fileName);
+        if (!java.nio.file.Files.isRegularFile(filePath)) {
             return ResponseEntity.notFound().build();
         }
         Resource resource = new UrlResource(filePath.toUri());
 
-        String contentType = Files.probeContentType(filePath);
-        if (contentType == null) {
-            String lower = decodedFileName.toLowerCase();
-            if (lower.endsWith(".pdf")) contentType = "application/pdf";
-            else if (lower.endsWith(".png")) contentType = "image/png";
-            else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) contentType = "image/jpeg";
-            else contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
-        }
-
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + decodedFileName + "\"")
-                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                .contentType(MediaTypeFactory.getMediaType(resource).orElse(MediaType.APPLICATION_OCTET_STREAM))
                 .body(resource);
+    }
+
+    private boolean mayViewResume(User user, String fileName) {
+        String role = user.getRole() == null ? "" : user.getRole().getName();
+        if ("ROLE_ADMIN".equals(role)) return true;
+        if ("ROLE_CANDIDATE".equals(role)) {
+            boolean profileOwnsFile = profileService.getProfileByUserId(user.getId())
+                    .map(profile -> fileName.equals(extractFileName(profile.getResumeUrl())))
+                    .orElse(false);
+            return profileOwnsFile || applicationRepository.findByCandidate_Id(user.getId()).stream()
+                    .anyMatch(application -> fileName.equals(extractFileName(application.getResumeUrl())));
+        }
+        if ("ROLE_RECRUITER".equals(role)) {
+            return applicationRepository.findByRecruiterId(user.getId()).stream()
+                    .anyMatch(application -> fileName.equals(extractFileName(application.getResumeUrl())));
+        }
+        return false;
+    }
+
+    private String extractFileName(String url) {
+        return url == null || url.isBlank() ? "" : url.substring(url.lastIndexOf('/') + 1);
     }
 
 }

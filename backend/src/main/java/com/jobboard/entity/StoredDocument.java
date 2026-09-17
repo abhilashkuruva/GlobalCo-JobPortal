@@ -28,8 +28,9 @@ public class StoredDocument {
     @Column(name = "file_size")
     private Long fileSize;
 
+    @Lob
     @Basic(fetch = FetchType.LAZY)
-    @Column(name = "file_data")
+    @Column(name = "file_data", columnDefinition = "bytea")
     private byte[] data;
 
     @Column(name = "created_at")

@@ -15,12 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.NoSuchElementException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,14 +30,16 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final NotificationService notificationService;
-    private final String RESUME_DIR = "uploads/resumes/";
+    private final FileStorageService fileStorageService;
 
     public ApplicationService(ApplicationRepository applicationRepository,
                               CandidateProfileRepository candidateProfileRepository,
-                              NotificationService notificationService) {
+                              NotificationService notificationService,
+                              FileStorageService fileStorageService) {
         this.applicationRepository = applicationRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.notificationService = notificationService;
+        this.fileStorageService = fileStorageService;
     }
 
     public Page<Application> getApplicationsByCandidate(Long candidateId, Pageable pageable) {
@@ -146,10 +145,9 @@ public class ApplicationService {
             throw new NoSuchElementException("No resume has been submitted for this applicant");
         }
 
-        String fileName = Paths.get(resumeUrl).getFileName().toString();
-        Path resumeDirectory = Paths.get(RESUME_DIR).toAbsolutePath().normalize();
-        Path resumePath = resumeDirectory.resolve(fileName).normalize();
-        if (!resumePath.startsWith(resumeDirectory) || !Files.isRegularFile(resumePath)) {
+        String fileName = resumeUrl.substring(resumeUrl.lastIndexOf('/') + 1);
+        Path resumePath = fileStorageService.resolveResume(fileName);
+        if (!Files.isRegularFile(resumePath)) {
             throw new NoSuchElementException("The submitted resume file is unavailable");
         }
         return resumePath;
@@ -317,7 +315,7 @@ public class ApplicationService {
 
                 if (resumeUrl != null && resumeUrl.contains("/api/resumes/view/")) {
                     String actualFileName = resumeUrl.substring(resumeUrl.lastIndexOf("/") + 1);
-                    Path resumePath = Paths.get(RESUME_DIR).resolve(actualFileName);
+                    Path resumePath = fileStorageService.resolveResume(actualFileName);
 
                     if (Files.exists(resumePath)) {
                         String candName = app.getCandidate() != null && app.getCandidate().getFirstName() != null

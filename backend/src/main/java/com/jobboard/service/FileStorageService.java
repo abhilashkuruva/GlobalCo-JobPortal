@@ -6,11 +6,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class FileStorageService {
@@ -53,14 +55,44 @@ public class FileStorageService {
         log.info("Persisted document '{}' to database and local disk.", fileKey);
     }
 
+    public String storeResume(MultipartFile file) throws IOException {
+        return store(file, "uploads/resumes", "RESUME");
+    }
+
+    public String storeVerificationDocument(MultipartFile file) throws IOException {
+        return store(file, "uploads/verification_docs", "VERIFICATION_DOCUMENT");
+    }
+
+    public Path resolveResume(String fileKey) {
+        return resolveAndEnsureFile("uploads/resumes", fileKey);
+    }
+
+    public Path resolveVerificationDocument(String fileKey) {
+        return resolveAndEnsureFile("uploads/verification_docs", fileKey);
+    }
+
+    private String store(MultipartFile file, String directory, String category) throws IOException {
+        String originalName = file.getOriginalFilename() == null ? "document" : file.getOriginalFilename();
+        String safeName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
+        String fileKey = UUID.randomUUID() + "_" + safeName;
+        saveDocument(directory, fileKey, originalName, category, file.getContentType(), file.getBytes());
+        return fileKey;
+    }
+
     /**
      * Retrieves file path. If file was wiped on local disk (e.g. Render container restart),
      * recovers it from PostgreSQL database and re-caches it locally.
      */
     @Transactional(readOnly = true)
     public Path resolveAndEnsureFile(String localDir, String fileKey) {
+        if (fileKey == null || fileKey.isBlank() || fileKey.contains("..") || fileKey.contains("/") || fileKey.contains("\\")) {
+            throw new IllegalArgumentException("Invalid document name");
+        }
         Path dirPath = Paths.get(localDir).toAbsolutePath().normalize();
         Path localFile = dirPath.resolve(fileKey).normalize();
+        if (!localFile.startsWith(dirPath)) {
+            throw new IllegalArgumentException("Invalid document path");
+        }
 
         // 1. Check if present on local disk
         if (Files.exists(localFile)) {

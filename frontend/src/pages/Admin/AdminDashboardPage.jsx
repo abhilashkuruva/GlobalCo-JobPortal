@@ -6,13 +6,14 @@ import {
   UserCheck, UserX, Building2, Download, Eye, ChevronDown,
   Clock, FileText, ExternalLink, X, ThumbsDown, Image
 } from 'lucide-react';
-import api, { BACKEND_URL } from '../../services/api';
+import api from '../../services/api';
 import {
   getAdminStats, getAllUsers, toggleUserStatus,
   getAllJobs, moderateDeleteJob, getAuditLogs,
   getRecruiterRequests, approveRecruiterRequest, rejectRecruiterRequest,
   getAllRecruiters, getAllJobSeekers, approveJob, rejectJob
 } from '../../services/adminApi';
+import { openAuthorizedFile } from '../../services/fileApi';
 
 const STATUS_COLORS = {
   PENDING:  'bg-amber-50 text-amber-700 border-amber-200',
@@ -697,14 +698,13 @@ export default function AdminDashboardPage() {
                       <td className="px-4 py-3 text-slate-700 font-semibold hidden sm:table-cell">{s.applicationsCount ?? 0}</td>
                       <td className="px-4 py-3">
                         {s.resumeUrl ? (
-                          <a
-                            href={`${BACKEND_URL}${s.resumeUrl}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => openAuthorizedFile(s.resumeUrl).catch(() => notify('Unable to open this resume.', 'error'))}
                             className="inline-flex items-center gap-1 text-blue-600 hover:underline text-[10px] font-medium"
                           >
                             <FileText size={11} /> View Resume
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-[10px] text-slate-400 italic">Not uploaded</span>
                         )}

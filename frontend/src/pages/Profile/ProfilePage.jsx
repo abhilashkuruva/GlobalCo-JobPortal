@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCandidateProfile, updateCandidateProfile, uploadResume } from '../../services/profileApi';
-import { BACKEND_URL } from '../../services/api';
+import { openAuthorizedFile } from '../../services/fileApi';
 
 const SUGGESTED_SKILLS = ['Java', 'Spring Boot', 'React', 'Docker', 'AWS', 'PostgreSQL', 'Microservices', 'Kubernetes', 'Python', 'Kafka'];
 
@@ -466,14 +466,13 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <a
-                      href={`${BACKEND_URL}${profile.resumeUrl}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  <button
+                      type="button"
+                      onClick={() => openAuthorizedFile(profile.resumeUrl).catch(() => showToast('Unable to open your resume.'))}
                       className="flex-1 inline-flex items-center justify-center gap-1 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 py-1.5 rounded transition-colors"
                     >
                       <Download size={12} /> View
-                    </a>
+                  </button>
                     <label className="flex-1 cursor-pointer inline-flex items-center justify-center gap-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 py-1.5 rounded transition-colors">
                       <UploadCloud size={12} /> Replace
                       <input type="file" accept=".pdf,.doc,.docx" onChange={handleResumeUpload} className="hidden" />
