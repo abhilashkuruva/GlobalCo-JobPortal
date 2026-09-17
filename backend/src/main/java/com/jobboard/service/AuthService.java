@@ -38,6 +38,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final ResumeParserService resumeParserService;
+    private final FileStorageService fileStorageService;
 
     private final String RESUME_DIR = "uploads/resumes/";
     private final String VERIFICATION_DOCS_DIR = "uploads/verification_docs/";
@@ -51,7 +52,8 @@ public class AuthService {
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
                        JwtUtil jwtUtil,
-                       ResumeParserService resumeParserService) {
+                       ResumeParserService resumeParserService,
+                       FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.candidateProfileRepository = candidateProfileRepository;
@@ -62,6 +64,7 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.resumeParserService = resumeParserService;
+        this.fileStorageService = fileStorageService;
 
         try {
             Files.createDirectories(Paths.get(RESUME_DIR));
@@ -205,8 +208,7 @@ public class AuthService {
 
         String cleanName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
         String savedFileName = UUID.randomUUID().toString().substring(0, 8) + "_" + cleanName;
-        Path targetPath = Paths.get(RESUME_DIR).resolve(savedFileName);
-        Files.copy(resumeFile.getInputStream(), targetPath);
+        fileStorageService.saveDocument(RESUME_DIR, savedFileName, originalName, "RESUME", resumeFile.getContentType(), resumeFile.getBytes());
 
         User user = new User();
         String fName = fullName != null ? fullName.trim() : "";
@@ -313,8 +315,7 @@ public class AuthService {
             identityName = identityProof.getOriginalFilename();
             String clean = identityName != null ? identityName.replaceAll("[^a-zA-Z0-9._-]", "_") : "identity.pdf";
             String savedIdName = UUID.randomUUID().toString().substring(0, 8) + "_" + clean;
-            Path p = Paths.get(VERIFICATION_DOCS_DIR).resolve(savedIdName);
-            Files.copy(identityProof.getInputStream(), p);
+            fileStorageService.saveDocument(VERIFICATION_DOCS_DIR, savedIdName, identityName, "IDENTITY_PROOF", identityProof.getContentType(), identityProof.getBytes());
             identityPath = "/api/admin/recruiter-requests/document/identity/" + savedIdName;
         }
 
@@ -326,8 +327,7 @@ public class AuthService {
             companyProofName = companyProof.getOriginalFilename();
             String clean = companyProofName != null ? companyProofName.replaceAll("[^a-zA-Z0-9._-]", "_") : "company_proof.pdf";
             String savedProofName = UUID.randomUUID().toString().substring(0, 8) + "_" + clean;
-            Path p = Paths.get(VERIFICATION_DOCS_DIR).resolve(savedProofName);
-            Files.copy(companyProof.getInputStream(), p);
+            fileStorageService.saveDocument(VERIFICATION_DOCS_DIR, savedProofName, companyProofName, "COMPANY_PROOF", companyProof.getContentType(), companyProof.getBytes());
             companyProofPath = "/api/admin/recruiter-requests/document/company/" + savedProofName;
         }
 

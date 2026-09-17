@@ -19,7 +19,7 @@ const api = axios.create({
  * Fires silently on initial load without blocking UI.
  */
 export const warmUpBackend = () => {
-  fetch(`${BACKEND_URL}/health`, { method: 'GET', cache: 'no-store' }).catch(() => {});
+  fetch(${ BACKEND_URL } / health, { method: 'GET', cache: 'no-store' }).catch(() => { });
 };
 
 api.interceptors.request.use(config => {

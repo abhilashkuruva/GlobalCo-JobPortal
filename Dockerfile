@@ -22,7 +22,7 @@ COPY --from=builder /build/target/*.jar app.jar
 
 # Dynamic PORT for Render / Cloud hosting
 ENV PORT=8080
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=40 -XX:+UseSerialGC -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=50 -Djava.security.egd=file:/dev/./urandom"
 
 EXPOSE 8080
 

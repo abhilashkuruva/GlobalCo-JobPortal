@@ -30,6 +30,7 @@ public class AdminController {
     private final AdminService adminService;
     private final AuditLogService auditLogService;
     private final JobService jobService;
+    private final com.jobboard.service.FileStorageService fileStorageService;
     private final String VERIFICATION_DOCS_DIR = "uploads/verification_docs/";
 
     public AdminController(UserRepository userRepository,
@@ -38,7 +39,8 @@ public class AdminController {
                            CandidateProfileRepository candidateProfileRepository,
                            AdminService adminService,
                            AuditLogService auditLogService,
-                           JobService jobService) {
+                           JobService jobService,
+                           com.jobboard.service.FileStorageService fileStorageService) {
         this.userRepository = userRepository;
         this.jobRepository = jobRepository;
         this.applicationRepository = applicationRepository;
@@ -46,6 +48,7 @@ public class AdminController {
         this.adminService = adminService;
         this.auditLogService = auditLogService;
         this.jobService = jobService;
+        this.fileStorageService = fileStorageService;
     }
 
     private String getAdminUsername() {
@@ -95,7 +98,7 @@ public class AdminController {
         }
 
         Path basePath = Paths.get(VERIFICATION_DOCS_DIR).toAbsolutePath().normalize();
-        Path filePath = basePath.resolve(decodedFileName).normalize();
+        Path filePath = fileStorageService.resolveAndEnsureFile(VERIFICATION_DOCS_DIR, decodedFileName);
 
         // Ensure the resolved path is still inside our allowed directory
         if (!filePath.startsWith(basePath)) {

@@ -29,18 +29,16 @@ public class ResumeController {
     private final CandidateProfileService profileService;
     private final UserRepository userRepository;
     private final ResumeParserService resumeParserService;
+    private final com.jobboard.service.FileStorageService fileStorageService;
     private final String UPLOAD_DIR = "uploads/resumes/";
 
     public ResumeController(CandidateProfileService profileService, UserRepository userRepository,
-                            ResumeParserService resumeParserService) {
+                            ResumeParserService resumeParserService,
+                            com.jobboard.service.FileStorageService fileStorageService) {
         this.profileService = profileService;
         this.userRepository = userRepository;
         this.resumeParserService = resumeParserService;
-        try {
-            Files.createDirectories(Paths.get(UPLOAD_DIR));
-        } catch (IOException e) {
-            System.err.println("Warning: Could not create upload directory " + e.getMessage());
-        }
+        this.fileStorageService = fileStorageService;
     }
 
     private User getCurrentUser() {
@@ -59,8 +57,7 @@ public class ResumeController {
         String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "resume.pdf";
         String cleanName = originalName.replaceAll("[^a-zA-Z0-9._-]", "_");
         String fileName = UUID.randomUUID().toString().substring(0, 8) + "_" + cleanName;
-        Path targetPath = Paths.get(UPLOAD_DIR).resolve(fileName);
-        Files.copy(file.getInputStream(), targetPath);
+        fileStorageService.saveDocument(UPLOAD_DIR, fileName, originalName, "RESUME", file.getContentType(), file.getBytes());
 
         User user = getCurrentUser();
         String resumeUrl = "/api/resumes/view/" + fileName;
@@ -105,15 +102,29 @@ public class ResumeController {
 
     @GetMapping("/view/{fileName}")
     public ResponseEntity<Resource> viewResume(@PathVariable String fileName) throws IOException {
-        Path filePath = Paths.get(UPLOAD_DIR).resolve(fileName).normalize();
+        String decodedFileName = java.net.URLDecoder.decode(fileName, "UTF-8");
+        if (decodedFileName.contains("..") || decodedFileName.contains("/") || decodedFileName.contains("\\")) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Path filePath = fileStorageService.resolveAndEnsureFile(UPLOAD_DIR, decodedFileName);
         if (!Files.exists(filePath)) {
             return ResponseEntity.notFound().build();
         }
         Resource resource = new UrlResource(filePath.toUri());
 
+        String contentType = Files.probeContentType(filePath);
+        if (contentType == null) {
+            String lower = decodedFileName.toLowerCase();
+            if (lower.endsWith(".pdf")) contentType = "application/pdf";
+            else if (lower.endsWith(".png")) contentType = "image/png";
+            else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) contentType = "image/jpeg";
+            else contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + decodedFileName + "\"")
+                .contentType(MediaType.parseMediaType(contentType))
                 .body(resource);
     }
 

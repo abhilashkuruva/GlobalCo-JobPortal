@@ -15,12 +15,12 @@ jobs:
         env:
           BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL || vars.RENDER_BACKEND_URL }}
         run: |
-          TARGET_URL="${BACKEND_URL:-https://globalco-jobboard-backend.onrender.com}/health"
-          echo "Pinging health endpoint: $TARGET_URL"
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$TARGET_URL" || true)
-          echo "HTTP Response code: $RESPONSE"
-          if [ "$RESPONSE" = "200" ]; then
-            echo "Render backend is warm and healthy! (Status 200)"
+          TARGET_URL=${BACKEND_URL:-https://globalco-jobboard-backend.onrender.com}/health
+          echo Pinging health endpoint: $TARGET_URL
+          RESPONSE=$(curl -s -o /dev/null -w %{http_code} --max-time 15 $TARGET_URL || true)
+          echo HTTP Response code: $RESPONSE
+          if [ $RESPONSE = 200 ]; then
+            echo Render backend is warm and healthy! (Status 200)
           else
-            echo "Backend ping returned $RESPONSE (or server is currently starting up)."
+            echo Backend ping returned $RESPONSE (or server is currently starting up).
           fi

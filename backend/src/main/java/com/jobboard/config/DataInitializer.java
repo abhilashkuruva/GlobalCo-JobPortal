@@ -34,6 +34,7 @@ public class DataInitializer {
             AuditLogRepository auditLogRepository,
             RecruiterRequestRepository recruiterRequestRepository,
             PasswordEncoder passwordEncoder,
+            com.jobboard.service.FileStorageService fileStorageService,
             PlatformTransactionManager transactionManager
     ) {
         return args -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
@@ -177,6 +178,12 @@ public class DataInitializer {
             if (recRole != null) rejectedRecruiter.setRole(recRole);
             userRepository.save(rejectedRecruiter);
             usersByUsername.put("sneha.recruiter", rejectedRecruiter);
+
+            // Ensure sample verification documents exist in storage
+            try {
+                fileStorageService.saveDocument("uploads/verification_docs", "sample_id_proof.pdf", "sample_id_proof.pdf", "IDENTITY_PROOF", "application/pdf", fileStorageService.createSamplePdfContent("Official Identity Verification Document", "Government ID & Address Proof for Recruiter Verification"));
+                fileStorageService.saveDocument("uploads/verification_docs", "sample_company_cert.pdf", "sample_company_cert.pdf", "COMPANY_PROOF", "application/pdf", fileStorageService.createSamplePdfContent("Certificate of Incorporation", "Ministry of Corporate Affairs - Recruiter Company Certificate"));
+            } catch (Exception ignored) {}
 
             // --- Recruiter Requests ---
             if (recruiterRequestRepository.count() == 0) {
@@ -342,6 +349,9 @@ public class DataInitializer {
                 profile.setLocation(user.getLocation());
                 profile.setPhone(user.getMobileNumber());
                 String resumeName = "sample_" + ps.username().replace(".", "_") + "_resume.pdf";
+                try {
+                    fileStorageService.saveDocument("uploads/resumes", resumeName, resumeName, "RESUME", "application/pdf", fileStorageService.createSamplePdfContent("Curriculum Vitae / Resume", "Candidate Profile: " + user.getFirstName() + " " + user.getLastName() + " - " + ps.title()));
+                } catch (Exception ignored) {}
                 profile.setResumeFileName(resumeName);
                 profile.setResumeUrl("/api/resumes/view/" + resumeName);
                 profile.setResumePath("uploads/resumes/" + resumeName);
