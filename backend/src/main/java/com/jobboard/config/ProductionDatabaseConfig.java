@@ -22,12 +22,20 @@ public class ProductionDatabaseConfig {
     @Primary
     public DataSource dataSource(
             @Value("${spring.datasource.url:jdbc:postgresql://ep-floral-math-awdrkjeh-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require}") String rawUrl,
-            @Value("${spring.datasource.username:}") String configuredUsername,
-            @Value("${spring.datasource.password:}") String configuredPassword) {
+            @Value("${spring.datasource.username:${DB_USERNAME:neondb_owner}}") String configuredUsername,
+            @Value("${spring.datasource.password:${DB_PASSWORD:npg_xYAb6fekFqS4}}") String configuredPassword) {
 
-        String jdbcUrl = rawUrl.trim();
+        String jdbcUrl = rawUrl != null ? rawUrl.trim() : "";
         String effectiveUsername = configuredUsername != null ? configuredUsername.trim() : "";
         String effectivePassword = configuredPassword != null ? configuredPassword.trim() : "";
+
+        // Fallback from system environment if property was empty string
+        if (effectiveUsername.isBlank()) {
+            effectiveUsername = System.getenv().getOrDefault("DB_USERNAME", "neondb_owner").trim();
+        }
+        if (effectivePassword.isBlank()) {
+            effectivePassword = System.getenv().getOrDefault("DB_PASSWORD", "npg_xYAb6fekFqS4").trim();
+        }
 
         try {
             // Strip leading "jdbc:" if present to parse with standard URI
@@ -37,15 +45,15 @@ public class ProductionDatabaseConfig {
                 String userInfo = uri.getUserInfo();
                 if (userInfo != null && !userInfo.isBlank()) {
                     String[] parts = userInfo.split(":", 2);
-                    if (effectiveUsername.isBlank() && parts.length > 0) {
+                    if (parts.length > 0 && !parts[0].isBlank()) {
                         effectiveUsername = parts[0];
                     }
-                    if (effectivePassword.isBlank() && parts.length > 1) {
+                    if (parts.length > 1 && !parts[1].isBlank()) {
                         effectivePassword = parts[1];
                     }
                 }
 
-                // Reconstruct clean JDBC URL without credentials
+                // Reconstruct clean JDBC URL without inline user:password@
                 StringBuilder cleanUrl = new StringBuilder("jdbc:postgresql://");
                 cleanUrl.append(uri.getHost());
                 if (uri.getPort() > 0) {
@@ -58,21 +66,19 @@ public class ProductionDatabaseConfig {
                     cleanUrl.append("?").append(uri.getQuery());
                 }
                 jdbcUrl = cleanUrl.toString();
-                log.info("Sanitized database JDBC URL for PostgreSQL: {}", jdbcUrl);
             }
         } catch (Exception e) {
-            log.warn("Could not parse database URL as URI, using raw URL: {}", e.getMessage());
+            log.warn("Could not parse database URL as URI, using as-is: {}", e.getMessage());
         }
+
+        log.info("Configuring HikariDataSource with URL: {}, Username: {}, Password configured: {}",
+                jdbcUrl, effectiveUsername, !effectivePassword.isBlank());
 
         HikariDataSource dataSource = new HikariDataSource();
         dataSource.setJdbcUrl(jdbcUrl);
         dataSource.setDriverClassName("org.postgresql.Driver");
-        if (!effectiveUsername.isBlank()) {
-            dataSource.setUsername(effectiveUsername);
-        }
-        if (!effectivePassword.isBlank()) {
-            dataSource.setPassword(effectivePassword);
-        }
+        dataSource.setUsername(effectiveUsername);
+        dataSource.setPassword(effectivePassword);
         dataSource.setMaximumPoolSize(5);
         dataSource.setMinimumIdle(1);
         dataSource.setIdleTimeout(300000);
