@@ -6,6 +6,7 @@ import {
   Phone, Mail, Briefcase
 } from 'lucide-react';
 import { getAllJobSeekers } from '../../services/adminApi';
+import { BACKEND_URL } from '../../services/api';
 
 function StatusBadge({ status, enabled }) {
   const s = status || (enabled !== false ? 'APPROVED' : 'SUSPENDED');
@@ -231,7 +232,7 @@ export default function AdminJobSeekerPage() {
                       <td className="px-4 py-3">
                         {s.resumeUrl ? (
                           <a
-                            href={`http://localhost:8080${s.resumeUrl}`}
+                            href={`${BACKEND_URL}${s.resumeUrl}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline text-[10px] font-medium"
@@ -324,7 +325,7 @@ export default function AdminJobSeekerPage() {
                   <div>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Resume</p>
                     <a
-                      href={`http://localhost:8080${selectedSeeker.resumeUrl}`}
+                      href={`${BACKEND_URL}${selectedSeeker.resumeUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded hover:bg-blue-100 transition-colors"

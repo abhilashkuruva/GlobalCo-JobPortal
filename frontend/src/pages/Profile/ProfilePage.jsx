@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCandidateProfile, updateCandidateProfile, uploadResume } from '../../services/profileApi';
+import { BACKEND_URL } from '../../services/api';
 
 const SUGGESTED_SKILLS = ['Java', 'Spring Boot', 'React', 'Docker', 'AWS', 'PostgreSQL', 'Microservices', 'Kubernetes', 'Python', 'Kafka'];
 
@@ -466,7 +467,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex gap-2 pt-1">
                     <a
-                      href={`http://localhost:8080${profile.resumeUrl}`}
+                      href={`${BACKEND_URL}${profile.resumeUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 inline-flex items-center justify-center gap-1 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 py-1.5 rounded transition-colors"

@@ -1,0 +1,26 @@
+name: KeepAlive Render Backend
+
+on:
+  schedule:
+    # Ping every 10 minutes (Render spins down after 15 minutes of inactivity)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Render Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Service
+        env:
+          BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL || vars.RENDER_BACKEND_URL }}
+        run: |
+          TARGET_URL="${BACKEND_URL:-https://globalco-jobboard-backend.onrender.com}/health"
+          echo "Pinging health endpoint: $TARGET_URL"
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$TARGET_URL" || true)
+          echo "HTTP Response code: $RESPONSE"
+          if [ "$RESPONSE" = "200" ]; then
+            echo "Render backend is warm and healthy! (Status 200)"
+          else
+            echo "Backend ping returned $RESPONSE (or server is currently starting up)."
+          fi

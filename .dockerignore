@@ -1,0 +1,13 @@
+.git
+.github
+frontend/node_modules
+frontend/dist
+backend/target
+**/.env
+**/.env.*
+!**/.env.example
+docs
+devops
+*.md
+.idea
+.vscode

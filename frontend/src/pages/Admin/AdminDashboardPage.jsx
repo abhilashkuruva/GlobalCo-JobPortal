@@ -6,7 +6,7 @@ import {
   UserCheck, UserX, Building2, Download, Eye, ChevronDown,
   Clock, FileText, ExternalLink, X, ThumbsDown, Image
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { BACKEND_URL } from '../../services/api';
 import {
   getAdminStats, getAllUsers, toggleUserStatus,
   getAllJobs, moderateDeleteJob, getAuditLogs,
@@ -698,7 +698,7 @@ export default function AdminDashboardPage() {
                       <td className="px-4 py-3">
                         {s.resumeUrl ? (
                           <a
-                            href={`http://localhost:8080${s.resumeUrl}`}
+                            href={`${BACKEND_URL}${s.resumeUrl}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-blue-600 hover:underline text-[10px] font-medium"
