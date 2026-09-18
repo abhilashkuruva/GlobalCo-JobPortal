@@ -3,9 +3,9 @@ package com.jobboard.config;
 import com.jobboard.entity.*;
 import com.jobboard.repository.*;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Configuration
-@Profile("!prod")
+@ConditionalOnProperty(prefix = "app.seed-data", name = "enabled", havingValue = "true")
 public class DataInitializer {
 
     @Bean
