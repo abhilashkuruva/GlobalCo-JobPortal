@@ -3,7 +3,7 @@ services:
     name: globalco-jobboard-backend
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     region: singapore
     healthCheckPath: /actuator/health
     autoDeploy: true
