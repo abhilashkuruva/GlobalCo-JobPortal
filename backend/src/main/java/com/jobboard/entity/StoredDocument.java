@@ -2,6 +2,8 @@ package com.jobboard.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "stored_documents", indexes = {
@@ -28,8 +30,8 @@ public class StoredDocument {
     @Column(name = "file_size")
     private Long fileSize;
 
-    @Lob
     @Basic(fetch = FetchType.LAZY)
+    @JdbcTypeCode(SqlTypes.LONGVARBINARY)
     @Column(name = "file_data", columnDefinition = "bytea")
     private byte[] data;
 
