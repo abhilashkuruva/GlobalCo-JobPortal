@@ -26,7 +26,6 @@ public interface JobRepository extends JpaRepository<Job, Long> {
            "AND (:workMode IS NULL OR LOWER(j.workMode) = LOWER(CAST(:workMode AS string))) " +
            "AND (:categoryName IS NULL OR LOWER(j.category.name) = LOWER(CAST(:categoryName AS string)))")
     Page<Job> searchJobsAdvanced(
-            @Param("status") String status,
             @Param("keyword") String keyword,
             @Param("location") String location,
             @Param("minExp") Integer minExp,
@@ -39,8 +38,7 @@ public interface JobRepository extends JpaRepository<Job, Long> {
            "AND (:title IS NULL OR LOWER(j.title) LIKE LOWER(CONCAT('%', CAST(:title AS string), '%')) OR LOWER(j.description) LIKE LOWER(CONCAT('%', CAST(:title AS string), '%'))) " +
            "AND (:location IS NULL OR LOWER(j.location) LIKE LOWER(CONCAT('%', CAST(:location AS string), '%'))) " +
            "AND (:minExp IS NULL OR j.experienceRequired >= :minExp)")
-    Page<Job> searchJobs(@Param("status") String status, 
-                        @Param("title") String title, 
+    Page<Job> searchJobs(@Param("title") String title, 
                         @Param("location") String location, 
                         @Param("minExp") Integer minExp, 
                         Pageable pageable);

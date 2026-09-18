@@ -39,11 +39,11 @@ public class JobService {
     }
 
     public Page<Job> getAllPublishedJobs(String keyword, String location, Integer minExp, Pageable pageable) {
-        return jobRepository.searchJobs("PUBLISHED", keyword, location, minExp, pageable);
+        return jobRepository.searchJobs(keyword, location, minExp, pageable);
     }
 
     public Page<Job> searchJobsAdvanced(String keyword, String location, Integer minExp, String workMode, String category, Pageable pageable) {
-        return jobRepository.searchJobsAdvanced("PUBLISHED", keyword, location, minExp, workMode, category, pageable);
+        return jobRepository.searchJobsAdvanced(keyword, location, minExp, workMode, category, pageable);
     }
 
     public Job getJobById(Long id) {
