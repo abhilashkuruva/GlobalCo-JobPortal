@@ -1,60 +1,59 @@
-```yaml
 name: KeepAlive Render Backend
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"
-  workflow_dispatch:
+schedule:
+- cron: "*/10 * * * *"
+workflow_dispatch:
 
 permissions:
-  contents: read
+contents: read
 
 jobs:
-  ping:
-    name: Ping Render Health Check
-    runs-on: ubuntu-24.04
-    timeout-minutes: 3
+ping:
+name: Ping Render Health Check
+runs-on: ubuntu-24.04
+timeout-minutes: 3
 
-    steps:
-      - name: Ping Backend Service
-        env:
-          BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL || vars.RENDER_BACKEND_URL || 'https://globalco-jobboard-backend.onrender.com' }}
-        shell: bash
-        run: |
-          set -euo pipefail
+```
+steps:
+  - name: Ping Backend Service
+    env:
+      BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL || vars.RENDER_BACKEND_URL || 'https://globalco-jobboard-backend.onrender.com' }}
+    shell: bash
+    run: |
+      set -euo pipefail
 
-          TARGET_URL="${BACKEND_URL%/}/health"
+      TARGET_URL="${BACKEND_URL%/}/health"
+      echo "Pinging health endpoint: ${TARGET_URL}"
 
-          echo "Pinging health endpoint: ${TARGET_URL}"
+      for attempt in 1 2 3; do
+        echo "Attempt ${attempt} of 3"
 
-          for attempt in 1 2 3; do
-            echo "Attempt ${attempt} of 3"
+        RESPONSE=$(curl \
+          --silent \
+          --show-error \
+          --location \
+          --output /tmp/health-response.txt \
+          --write-out "%{http_code}" \
+          --connect-timeout 15 \
+          --max-time 45 \
+          "${TARGET_URL}") || RESPONSE="000"
 
-            RESPONSE=$(curl \
-              --silent \
-              --show-error \
-              --location \
-              --output /tmp/health-response.txt \
-              --write-out "%{http_code}" \
-              --connect-timeout 15 \
-              --max-time 45 \
-              "${TARGET_URL}") || RESPONSE="000"
+        echo "HTTP response code: ${RESPONSE}"
 
-            echo "HTTP response code: ${RESPONSE}"
+        if [[ "${RESPONSE}" == "200" ]]; then
+          echo "Render backend is responding successfully."
+          exit 0
+        fi
 
-            if [[ "${RESPONSE}" == "200" ]]; then
-              echo "Render backend is responding successfully."
-              exit 0
-            fi
+        echo "Backend is not healthy yet."
 
-            echo "Backend is not healthy yet."
+        if [[ "${attempt}" -lt 3 ]]; then
+          sleep 10
+        fi
+      done
 
-            if [[ "${attempt}" -lt 3 ]]; then
-              sleep 10
-            fi
-          done
-
-          echo "ERROR: Backend health check failed after 3 attempts."
-          echo "Check the Render service status and application logs."
-          exit 1
+      echo "ERROR: Backend health check failed after 3 attempts."
+      echo "Check the Render service status and application logs."
+      exit 1
 ```
