@@ -1,33 +1,63 @@
 name: KeepAlive Render Backend
 
 on:
-schedule:
-- cron: "*/10 * * * *"
-workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-ping:
-name: Ping Render Health Check
-runs-on: ubuntu-24.04
+  ping:
+    name: Ping Render Health Check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
 
-```
-steps:
-  - name: Ping Backend Service
-    env:
-      BACKEND_URL: https://globalco-jobboard-backend.onrender.com
-    shell: bash
-    run: |
-      URL="${BACKEND_URL}/health"
-      echo "Checking backend health: ${URL}"
+    steps:
+      - name: Ping Backend Service
+        env:
+          BACKEND_URL: https://globalco-jobboard-backend.onrender.com
+        shell: bash
+        run: |
+          set -uo pipefail
 
-      STATUS=$(curl -sS -L -o /dev/null -w "%{http_code}" --connect-timeout 15 --max-time 45 "${URL}") || STATUS="000"
+          TARGET_URL="${BACKEND_URL%/}/health"
 
-      echo "HTTP status: ${STATUS}"
+          echo "Checking Render backend health..."
+          echo "Endpoint: ${TARGET_URL}"
 
-      if [ "${STATUS}" = "200" ]; then
-        echo "Backend is healthy."
-      else
-        echo "Health check failed with status ${STATUS}"
-        exit 1
-      fi
-```
+          for attempt in 1 2 3; do
+            echo "Attempt ${attempt} of 3"
+
+            RESPONSE=$(curl \
+              --silent \
+              --show-error \
+              --location \
+              --output /tmp/health-response.txt \
+              --write-out "%{http_code}" \
+              --connect-timeout 15 \
+              --max-time 45 \
+              "${TARGET_URL}") || RESPONSE="000"
+
+            echo "HTTP status: ${RESPONSE}"
+
+            if [[ "${RESPONSE}" == "200" ]]; then
+              echo "SUCCESS: Render backend is healthy."
+              exit 0
+            fi
+
+            if [[ -s /tmp/health-response.txt ]]; then
+              echo "Response body:"
+              head -c 500 /tmp/health-response.txt
+              echo
+            fi
+
+            if [[ "${attempt}" -lt 3 ]]; then
+              echo "Retrying in 10 seconds..."
+              sleep 10
+            fi
+          done
+
+          echo "ERROR: Backend health check failed after 3 attempts."
+          exit 1
