@@ -5,55 +5,28 @@ schedule:
 - cron: "*/10 * * * *"
 workflow_dispatch:
 
-permissions:
-contents: read
-
 jobs:
 ping:
 name: Ping Render Health Check
 runs-on: ubuntu-24.04
-timeout-minutes: 3
 
 ```
 steps:
   - name: Ping Backend Service
     env:
       BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL || vars.RENDER_BACKEND_URL || 'https://globalco-jobboard-backend.onrender.com' }}
-    shell: bash
     run: |
-      set -euo pipefail
+      URL="${BACKEND_URL%/}/health"
+      echo "Checking: $URL"
 
-      TARGET_URL="${BACKEND_URL%/}/health"
-      echo "Pinging health endpoint: ${TARGET_URL}"
+      STATUS=$(curl -sS -L -o /dev/null -w "%{http_code}" --connect-timeout 15 --max-time 45 "$URL") || STATUS="000"
 
-      for attempt in 1 2 3; do
-        echo "Attempt ${attempt} of 3"
+      echo "HTTP status: $STATUS"
 
-        RESPONSE=$(curl \
-          --silent \
-          --show-error \
-          --location \
-          --output /tmp/health-response.txt \
-          --write-out "%{http_code}" \
-          --connect-timeout 15 \
-          --max-time 45 \
-          "${TARGET_URL}") || RESPONSE="000"
-
-        echo "HTTP response code: ${RESPONSE}"
-
-        if [[ "${RESPONSE}" == "200" ]]; then
-          echo "Render backend is responding successfully."
-          exit 0
-        fi
-
-        echo "Backend is not healthy yet."
-
-        if [[ "${attempt}" -lt 3 ]]; then
-          sleep 10
-        fi
-      done
-
-      echo "ERROR: Backend health check failed after 3 attempts."
-      echo "Check the Render service status and application logs."
-      exit 1
+      if [ "$STATUS" = "200" ]; then
+        echo "Backend is healthy."
+      else
+        echo "Health check failed with status $STATUS"
+        exit 1
+      fi
 ```
