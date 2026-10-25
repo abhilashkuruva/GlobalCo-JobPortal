@@ -9,24 +9,18 @@ jobs:
 ping:
 name: Ping Render Health Check
 runs-on: ubuntu-24.04
-
-```
 steps:
-  - name: Ping Backend Service
-    env:
-      BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL || vars.RENDER_BACKEND_URL || 'https://globalco-jobboard-backend.onrender.com' }}
-    run: |
-      URL="${BACKEND_URL%/}/health"
-      echo "Checking: $URL"
-
-      STATUS=$(curl -sS -L -o /dev/null -w "%{http_code}" --connect-timeout 15 --max-time 45 "$URL") || STATUS="000"
-
-      echo "HTTP status: $STATUS"
-
-      if [ "$STATUS" = "200" ]; then
-        echo "Backend is healthy."
-      else
-        echo "Health check failed with status $STATUS"
-        exit 1
-      fi
-```
+- name: Ping Backend Service
+env:
+BACKEND_URL: https://globalco-jobboard-backend.onrender.com
+run: |
+URL="${BACKEND_URL}/health"
+echo "Checking backend health: ${URL}"
+STATUS=$(curl -sS -L -o /dev/null -w "%{http_code}" --connect-timeout 15 --max-time 45 "${URL}") || STATUS="000"
+echo "HTTP status: ${STATUS}"
+if [ "${STATUS}" = "200" ]; then
+echo "Backend is healthy."
+else
+echo "Health check failed with status ${STATUS}"
+exit 1
+fi
