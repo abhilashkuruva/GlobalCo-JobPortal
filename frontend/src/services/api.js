@@ -10,6 +10,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Render free tier can take 15-30s to cold-start; allow 60s timeout
+  timeout: 60000,
 });
 
 api.interceptors.request.use(config => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Filter, SlidersHorizontal, MapPin, Briefcase, IndianRupee, LayoutGrid, Search, X, Check } from 'lucide-react';
+import { Filter, SlidersHorizontal, MapPin, Briefcase, IndianRupee, LayoutGrid, Search, X, Check, RefreshCw } from 'lucide-react';
 import { getPublishedJobs } from '../../services/jobApi';
 import JobCard from '../../components/JobCard/JobCard';
 
@@ -16,6 +16,8 @@ export default function JobSearchPage() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [slowLoad, setSlowLoad] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Search & Filter State
   const [keywordInput, setKeywordInput] = useState(query.get('keyword') || '');
@@ -32,8 +34,13 @@ export default function JobSearchPage() {
   const modes = query.get('modes') || '';
 
   useEffect(() => {
+    let slowTimer;
     (async () => {
       setLoading(true);
+      setError(null);
+      setSlowLoad(false);
+      // Show "waking up" banner after 4 seconds if still loading
+      slowTimer = setTimeout(() => setSlowLoad(true), 4000);
       try {
         const res = await getPublishedJobs({
           page: 0,
@@ -43,17 +50,21 @@ export default function JobSearchPage() {
           minExp,
           workMode: modes ? modes.split(',')[0] : undefined
         });
-        setJobs(res.content || res || []);
+        const content = res.content || (Array.isArray(res) ? res : []);
+        setJobs(content);
         if (query.get('modes')) {
           setSelectedModes(query.get('modes').split(','));
         }
-      } catch {
-        setError('Failed to retrieve job listings.');
+      } catch (err) {
+        setError('Failed to retrieve job listings. The server may be starting up — please try again in a moment.');
       } finally {
+        clearTimeout(slowTimer);
+        setSlowLoad(false);
         setLoading(false);
       }
     })();
-  }, [keyword, location, minExp, modes]);
+    return () => clearTimeout(slowTimer);
+  }, [keyword, location, minExp, modes, retryCount]);
 
   const handleApplyFilters = () => {
     const params = new URLSearchParams();
@@ -192,8 +203,22 @@ export default function JobSearchPage() {
           {/* Results Column */}
           <main className="flex-1 min-w-0">
             {error && (
-              <div className="bg-red-50 text-primary p-3 rounded-md mb-4 text-xs font-semibold border border-red-200">
-                {error}
+              <div className="bg-red-50 text-primary p-3 rounded-md mb-4 text-xs font-semibold border border-red-200 flex items-center justify-between gap-2">
+                <span>{error}</span>
+                <button
+                  onClick={() => setRetryCount(c => c + 1)}
+                  className="flex items-center gap-1 text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap"
+                >
+                  <RefreshCw size={12} /> Retry
+                </button>
+              </div>
+            )}
+
+            {/* Slow-start banner */}
+            {loading && slowLoad && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium px-4 py-2.5 rounded-md mb-4 flex items-center gap-2">
+                <RefreshCw size={13} className="animate-spin flex-shrink-0" />
+                <span>Waking up the server — this takes about 15 seconds on first visit. Hang tight!</span>
               </div>
             )}
 
@@ -221,19 +246,27 @@ export default function JobSearchPage() {
             )}
 
             {/* Empty State */}
-            {!loading && jobs.length === 0 && (
+            {!loading && jobs.length === 0 && !error && (
               <div className="bg-white rounded-lg p-8 sm:p-12 text-center border border-slate-200 shadow-sm">
                 <Filter size={32} className="mx-auto text-slate-300 mb-2" />
                 <h3 className="text-sm font-bold text-slate-800 mb-1">No matching opportunities</h3>
                 <p className="text-slate-500 text-xs mb-4 max-w-sm mx-auto">
                   Try broadening your keyword, removing location constraints, or clearing experience filters.
                 </p>
-                <button
-                  onClick={handleClearAll}
-                  className="bg-primary text-white font-semibold text-xs px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
-                >
-                  Reset All Filters
-                </button>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={handleClearAll}
+                    className="bg-primary text-white font-semibold text-xs px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
+                  >
+                    Reset All Filters
+                  </button>
+                  <button
+                    onClick={() => setRetryCount(c => c + 1)}
+                    className="border border-slate-300 text-slate-600 font-semibold text-xs px-4 py-2 rounded-md hover:bg-slate-50 transition-colors flex items-center gap-1.5"
+                  >
+                    <RefreshCw size={12} /> Refresh
+                  </button>
+                </div>
               </div>
             )}
 
