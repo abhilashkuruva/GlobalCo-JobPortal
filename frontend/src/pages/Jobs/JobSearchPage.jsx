@@ -201,7 +201,7 @@ export default function JobSearchPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-base font-bold text-slate-900">
-                  {jobs.length} Openings Found
+                  {loading ? 'Searching opportunities...' : `${jobs.length} Openings Found`}
                 </h2>
                 {keyword && (
                   <p className="text-xs text-primary font-medium mt-0.5">

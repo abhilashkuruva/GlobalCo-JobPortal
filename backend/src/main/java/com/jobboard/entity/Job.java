@@ -76,7 +76,7 @@ public class Job {
     private Set<Skill> skills = new HashSet<>();
 
     // Preferred Skills
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "job_preferred_skills",
             joinColumns = @JoinColumn(name = "job_id"),
@@ -86,7 +86,7 @@ public class Job {
     private Set<Skill> preferredSkills = new HashSet<>();
 
     // Additional Skills
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "job_additional_skills",
             joinColumns = @JoinColumn(name = "job_id"),
