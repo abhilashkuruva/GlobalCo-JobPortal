@@ -44,12 +44,15 @@ public class SecurityConfig {
             .headers(headers -> headers.frameOptions(frame -> frame.disable())) // Enable H2 console
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/health",
+                    "/api/health",
+                    "/actuator/health/**",
+                    "/actuator/**",
                     "/api/auth/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
                     "/h2-console/**",
-                    "/actuator/health/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/companies/**").permitAll()

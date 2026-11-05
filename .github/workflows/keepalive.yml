@@ -2,6 +2,7 @@ name: KeepAlive Render Backend
 
 on:
   schedule:
+    # Ping every 10 minutes (Render free tier spins down after 15 minutes of inactivity)
     - cron: "*/10 * * * *"
   workflow_dispatch:
 
@@ -12,52 +13,83 @@ jobs:
   ping:
     name: Ping Render Health Check
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 5
 
     steps:
       - name: Ping Backend Service
         env:
-          BACKEND_URL: https://globalco-jobboard-backend.onrender.com
+          BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL || vars.RENDER_BACKEND_URL || 'https://globalco-jobboard-backend.onrender.com' }}
         shell: bash
         run: |
           set -uo pipefail
 
-          TARGET_URL="${BACKEND_URL%/}/health"
+          # Normalize base URL (strip trailing slash)
+          BASE_URL="${BACKEND_URL%/}"
+          
+          # Target /health by default; fallback to /actuator/health if needed
+          PRIMARY_URL="${BASE_URL}/health"
+          FALLBACK_URL="${BASE_URL}/actuator/health"
 
-          echo "Checking Render backend health..."
-          echo "Endpoint: ${TARGET_URL}"
+          echo "=========================================="
+          echo "Render Backend KeepAlive & Health Check"
+          echo "Primary URL:  ${PRIMARY_URL}"
+          echo "Fallback URL: ${FALLBACK_URL}"
+          echo "=========================================="
 
-          for attempt in 1 2 3; do
-            echo "Attempt ${attempt} of 3"
-
-            RESPONSE=$(curl \
+          check_endpoint() {
+            local url="$1"
+            echo "Querying: ${url}"
+            curl \
               --silent \
               --show-error \
               --location \
               --output /tmp/health-response.txt \
               --write-out "%{http_code}" \
               --connect-timeout 15 \
-              --max-time 45 \
-              "${TARGET_URL}") || RESPONSE="000"
+              --max-time 60 \
+              "${url}" || echo "000"
+          }
 
-            echo "HTTP status: ${RESPONSE}"
+          for attempt in 1 2 3 4; do
+            echo ""
+            echo "--- Ping Attempt ${attempt} of 4 ---"
+
+            RESPONSE=$(check_endpoint "${PRIMARY_URL}")
+            echo "Primary HTTP status: ${RESPONSE}"
+
+            # If primary /health returned 404, try /actuator/health
+            if [[ "${RESPONSE}" == "404" ]]; then
+              echo "Primary returned 404; trying fallback actuator endpoint..."
+              FALLBACK_RESPONSE=$(check_endpoint "${FALLBACK_URL}")
+              echo "Fallback HTTP status: ${FALLBACK_RESPONSE}"
+              if [[ "${FALLBACK_RESPONSE}" == "200" ]]; then
+                RESPONSE="${FALLBACK_RESPONSE}"
+              fi
+            fi
 
             if [[ "${RESPONSE}" == "200" ]]; then
-              echo "SUCCESS: Render backend is healthy."
+              echo ""
+              echo "SUCCESS: Render backend is warm, responsive, and healthy (HTTP 200)."
+              if [[ -s /tmp/health-response.txt ]]; then
+                echo "Response body: $(head -c 200 /tmp/health-response.txt)"
+              fi
               exit 0
             fi
 
             if [[ -s /tmp/health-response.txt ]]; then
-              echo "Response body:"
-              head -c 500 /tmp/health-response.txt
-              echo
+              echo "Response body snippet:"
+              head -c 300 /tmp/health-response.txt
+              echo ""
             fi
 
-            if [[ "${attempt}" -lt 3 ]]; then
-              echo "Retrying in 10 seconds..."
-              sleep 10
+            if [[ "${attempt}" -lt 4 ]]; then
+              SLEEP_SEC=$((attempt * 15))
+              echo "Service may be waking from cold start. Retrying in ${SLEEP_SEC} seconds..."
+              sleep "${SLEEP_SEC}"
             fi
           done
 
-          echo "ERROR: Backend health check failed after 3 attempts."
+          echo ""
+          echo "ERROR: Render backend failed to respond with HTTP 200 after 4 attempts."
+          echo "Last HTTP status: ${RESPONSE}"
           exit 1
