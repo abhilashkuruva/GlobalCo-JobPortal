@@ -1,3 +1,4 @@
+
 services:
   - type: web
     name: globalco-jobboard-backend
@@ -10,6 +11,8 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
+      - key: APP_SEED_DATA_ENABLED
+        value: "true"
       - key: DB_URL
         sync: false
       - key: DB_USERNAME
