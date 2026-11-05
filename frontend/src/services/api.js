@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const envBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const defaultBaseUrl = import.meta.env.PROD 
+  ? 'https://globalco-jobboard-backend.onrender.com/api' 
+  : '/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: (envBaseUrl && envBaseUrl.trim() !== '') ? envBaseUrl.trim() : defaultBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
