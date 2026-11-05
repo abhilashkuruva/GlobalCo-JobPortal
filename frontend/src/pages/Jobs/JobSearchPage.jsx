@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Filter, SlidersHorizontal, MapPin, Briefcase, IndianRupee, LayoutGrid, Search, X, Check, RefreshCw } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Filter, SlidersHorizontal, MapPin, Search, X, RefreshCw } from 'lucide-react';
 import { getPublishedJobs } from '../../services/jobApi';
 import JobCard from '../../components/JobCard/JobCard';
 
@@ -12,8 +12,8 @@ function useQuery() {
 const expOptions = [
   { label: 'Entry Level (0-2 yrs)', value: 'entry', min: 0, max: 2 },
   { label: 'Junior (2-3 yrs)', value: 'junior', min: 2, max: 3 },
-  { label: 'Mid-Senior (4-7 yrs)', value: 'mid', min: 4, max: 7 },
-  { label: 'Lead / Principal (8+ yrs)', value: 'lead', min: 8, max: 99 }
+  { label: 'Mid-Senior (4-5 yrs)', value: 'mid', min: 4, max: 5 },
+  { label: 'Lead / Principal (6+ yrs)', value: 'lead', min: 6, max: 99 }
 ];
 
 const workModes = ['Remote', 'Hybrid', 'On-site'];
@@ -78,10 +78,10 @@ export default function JobSearchPage() {
   // Sync state to URL params
   const updateUrlParams = (newKeyword, newLocation, newExp, newModes) => {
     const params = new URLSearchParams();
-    if (newKeyword.trim()) params.set('keyword', newKeyword.trim());
-    if (newLocation.trim()) params.set('location', newLocation.trim());
+    if (newKeyword && newKeyword.trim()) params.set('keyword', newKeyword.trim());
+    if (newLocation && newLocation.trim()) params.set('location', newLocation.trim());
     if (newExp) params.set('minExp', newExp);
-    if (newModes.length > 0) params.set('modes', newModes.join(','));
+    if (newModes && newModes.length > 0) params.set('modes', newModes.join(','));
     const queryString = params.toString();
     navigate(`/jobs${queryString ? '?' + queryString : ''}`, { replace: true });
   };
@@ -91,17 +91,21 @@ export default function JobSearchPage() {
   };
 
   const handleModeToggle = (mode) => {
-    const nextModes = selectedModes.includes(mode)
-      ? selectedModes.filter((m) => m !== mode)
-      : [...selectedModes, mode];
-    setSelectedModes(nextModes);
-    updateUrlParams(keywordInput, locationInput, selectedExp, nextModes);
+    setSelectedModes(prev => {
+      const nextModes = prev.includes(mode)
+        ? prev.filter((m) => m !== mode)
+        : [...prev, mode];
+      updateUrlParams(keywordInput, locationInput, selectedExp, nextModes);
+      return nextModes;
+    });
   };
 
   const handleExpToggle = (val) => {
-    const nextExp = selectedExp === val ? '' : val;
-    setSelectedExp(nextExp);
-    updateUrlParams(keywordInput, locationInput, nextExp, selectedModes);
+    setSelectedExp(prev => {
+      const nextExp = prev === val ? '' : val;
+      updateUrlParams(keywordInput, locationInput, nextExp, selectedModes);
+      return nextExp;
+    });
   };
 
   const handleClearAll = () => {
@@ -116,7 +120,7 @@ export default function JobSearchPage() {
   const filteredJobs = useMemo(() => {
     return allJobs.filter((job) => {
       // 1. Keyword Filter (Matches title, company, description, or skills)
-      if (keywordInput.trim()) {
+      if (keywordInput && keywordInput.trim()) {
         const kw = keywordInput.toLowerCase().trim();
         const titleMatch = job.title?.toLowerCase().includes(kw);
         const compMatch = (job.companyName || job.company?.name)?.toLowerCase().includes(kw);
@@ -127,14 +131,14 @@ export default function JobSearchPage() {
       }
 
       // 2. Location Filter
-      if (locationInput.trim()) {
+      if (locationInput && locationInput.trim()) {
         const loc = locationInput.toLowerCase().trim();
         const locMatch = job.location?.toLowerCase().includes(loc);
         if (!locMatch) return false;
       }
 
       // 3. Work Mode Filter (Multi-select support)
-      if (selectedModes.length > 0) {
+      if (selectedModes && selectedModes.length > 0) {
         const jobMode = job.workMode?.toLowerCase() || '';
         const modeMatch = selectedModes.some((m) => jobMode === m.toLowerCase());
         if (!modeMatch) return false;
@@ -150,7 +154,8 @@ export default function JobSearchPage() {
           const num = Number(selectedExp);
           if (num === 0 && exp > 2) return false;
           if (num === 2 && (exp < 2 || exp > 3)) return false;
-          if (num === 4 && (exp < 4 || exp > 7)) return false;
+          if (num === 4 && (exp < 4 || exp > 5)) return false;
+          if (num === 6 && exp < 6) return false;
           if (num === 8 && exp < 8) return false;
         }
       }
@@ -158,6 +163,13 @@ export default function JobSearchPage() {
       return true;
     });
   }, [allJobs, keywordInput, locationInput, selectedModes, selectedExp]);
+
+  const hasActiveFilters = Boolean(
+    (keywordInput && keywordInput.trim()) ||
+    (locationInput && locationInput.trim()) ||
+    selectedExp ||
+    selectedModes.length > 0
+  );
 
   return (
     <div className="py-6 sm:py-8">
@@ -175,7 +187,11 @@ export default function JobSearchPage() {
               className="bg-transparent text-xs sm:text-sm outline-none w-full text-slate-800 placeholder:text-slate-400"
             />
             {keywordInput && (
-              <button onClick={() => { setKeywordInput(''); updateUrlParams('', locationInput, selectedExp, selectedModes); }} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => { setKeywordInput(''); updateUrlParams('', locationInput, selectedExp, selectedModes); }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
                 <X size={14} />
               </button>
             )}
@@ -192,15 +208,20 @@ export default function JobSearchPage() {
               className="bg-transparent text-xs sm:text-sm outline-none w-full text-slate-800 placeholder:text-slate-400"
             />
             {locationInput && (
-              <button onClick={() => { setLocationInput(''); updateUrlParams(keywordInput, '', selectedExp, selectedModes); }} className="text-slate-400 hover:text-slate-600">
+              <button
+                type="button"
+                onClick={() => { setLocationInput(''); updateUrlParams(keywordInput, '', selectedExp, selectedModes); }}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
                 <X size={14} />
               </button>
             )}
           </div>
 
           <button
+            type="button"
             onClick={handleApplyFilters}
-            className="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-md font-semibold text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5"
+            className="bg-primary hover:bg-primary-dark text-white px-5 py-2 rounded-md font-semibold text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Search size={14} /> Find Jobs
           </button>
@@ -215,8 +236,9 @@ export default function JobSearchPage() {
                 <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-2">
                   <Filter size={14} className="text-primary" /> Filter Options
                 </h3>
-                {(keywordInput || locationInput || selectedExp || selectedModes.length > 0) && (
+                {hasActiveFilters && (
                   <button
+                    type="button"
                     onClick={handleClearAll}
                     className="text-xs font-semibold text-primary hover:underline cursor-pointer"
                   >
@@ -233,32 +255,44 @@ export default function JobSearchPage() {
                       Experience Level
                     </label>
                     {selectedExp && (
-                      <button onClick={() => handleExpToggle(selectedExp)} className="text-[10px] text-slate-400 hover:text-primary">
+                      <button
+                        type="button"
+                        onClick={() => handleExpToggle(selectedExp)}
+                        className="text-[10px] text-slate-400 hover:text-primary cursor-pointer"
+                      >
                         Clear
                       </button>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    {expOptions.map((opt) => (
-                      <label
-                        key={opt.value}
-                        onClick={() => handleExpToggle(opt.value)}
-                        className={`flex items-center gap-2 cursor-pointer p-1.5 rounded-md transition-colors ${
-                          selectedExp === opt.value ? 'bg-red-50 text-primary font-semibold' : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="expRadio"
-                          checked={selectedExp === opt.value}
-                          onChange={() => {}}
-                          className="w-3.5 h-3.5 accent-primary cursor-pointer"
-                        />
-                        <span className="text-xs">
-                          {opt.label}
-                        </span>
-                      </label>
-                    ))}
+                  <div className="space-y-1.5">
+                    {expOptions.map((opt) => {
+                      const isSelected = selectedExp === opt.value;
+                      return (
+                        <div
+                          key={opt.value}
+                          onClick={() => handleExpToggle(opt.value)}
+                          className={`flex items-center gap-2.5 cursor-pointer p-2 rounded-md border text-xs transition-colors ${
+                            isSelected
+                              ? 'bg-red-50 border-red-300 text-primary font-bold'
+                              : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="expRadio"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleExpToggle(opt.value);
+                            }}
+                            className="w-3.5 h-3.5 accent-primary cursor-pointer"
+                          />
+                          <span className="select-none flex-1">
+                            {opt.label}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -269,36 +303,49 @@ export default function JobSearchPage() {
                       Work Mode
                     </label>
                     {selectedModes.length > 0 && (
-                      <button onClick={() => { setSelectedModes([]); updateUrlParams(keywordInput, locationInput, selectedExp, []); }} className="text-[10px] text-slate-400 hover:text-primary">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedModes([]); updateUrlParams(keywordInput, locationInput, selectedExp, []); }}
+                        className="text-[10px] text-slate-400 hover:text-primary cursor-pointer"
+                      >
                         Clear
                       </button>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    {workModes.map((mode) => (
-                      <label
-                        key={mode}
-                        onClick={() => handleModeToggle(mode)}
-                        className={`flex items-center gap-2 cursor-pointer p-1.5 rounded-md transition-colors ${
-                          selectedModes.includes(mode) ? 'bg-red-50 text-primary font-semibold' : 'hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedModes.includes(mode)}
-                          onChange={() => {}}
-                          className="w-3.5 h-3.5 accent-primary rounded cursor-pointer"
-                        />
-                        <span className="text-xs">
-                          {mode}
-                        </span>
-                      </label>
-                    ))}
+                  <div className="space-y-1.5">
+                    {workModes.map((mode) => {
+                      const isChecked = selectedModes.includes(mode);
+                      return (
+                        <div
+                          key={mode}
+                          onClick={() => handleModeToggle(mode)}
+                          className={`flex items-center gap-2.5 cursor-pointer p-2 rounded-md border text-xs transition-colors ${
+                            isChecked
+                              ? 'bg-red-50 border-red-300 text-primary font-bold'
+                              : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              handleModeToggle(mode);
+                            }}
+                            className="w-3.5 h-3.5 accent-primary rounded cursor-pointer"
+                          />
+                          <span className="select-none flex-1">
+                            {mode}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <div className="pt-3 border-t border-slate-100">
                   <button
+                    type="button"
                     onClick={handleApplyFilters}
                     className="w-full bg-primary hover:bg-primary-dark text-white font-semibold text-xs py-2 rounded-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
@@ -315,8 +362,9 @@ export default function JobSearchPage() {
               <div className="bg-red-50 text-primary p-3 rounded-md mb-4 text-xs font-semibold border border-red-200 flex items-center justify-between gap-2">
                 <span>{error}</span>
                 <button
+                  type="button"
                   onClick={() => setRetryCount((c) => c + 1)}
-                  className="flex items-center gap-1 text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1 text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap cursor-pointer"
                 >
                   <RefreshCw size={12} /> Retry
                 </button>
@@ -364,12 +412,14 @@ export default function JobSearchPage() {
                 </p>
                 <div className="flex items-center justify-center gap-2">
                   <button
+                    type="button"
                     onClick={handleClearAll}
                     className="bg-primary text-white font-semibold text-xs px-4 py-2 rounded-md hover:bg-primary-dark transition-colors cursor-pointer"
                   >
                     Reset All Filters
                   </button>
                   <button
+                    type="button"
                     onClick={() => setRetryCount((c) => c + 1)}
                     className="border border-slate-300 text-slate-600 font-semibold text-xs px-4 py-2 rounded-md hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
