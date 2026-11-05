@@ -44,6 +44,7 @@ public class SecurityConfig {
             .headers(headers -> headers.frameOptions(frame -> frame.disable())) // Enable H2 console
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/",
                     "/health",
                     "/api/health",
                     "/actuator/health/**",

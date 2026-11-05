@@ -9,6 +9,16 @@ import java.util.Map;
 @RestController
 public class HealthController {
 
+    @GetMapping("/")
+    public ResponseEntity<Map<String, Object>> root() {
+        return ResponseEntity.ok(Map.of(
+            "service", "GlobalCo JobBoard API",
+            "status", "UP",
+            "health", "/health",
+            "docs", "/swagger-ui.html"
+        ));
+    }
+
     @GetMapping({"/health", "/api/health"})
     public ResponseEntity<Map<String, String>> health() {
         return ResponseEntity.ok(Map.of("status", "UP"));
