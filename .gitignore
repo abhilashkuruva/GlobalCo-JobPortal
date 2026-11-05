@@ -96,11 +96,7 @@ ENV/
 .env.production.local
 
 # ------------------------------------------------------------------------------
-# Runtime Uploads & Generated Media Payloads (Keep Directory Structure & Samples)
+# Runtime Uploads & Generated Media Payloads
 # ------------------------------------------------------------------------------
-**/uploads/resumes/*
-!**/uploads/resumes/.gitkeep
-!**/uploads/resumes/sample_*
-**/uploads/verification_docs/*
-!**/uploads/verification_docs/.gitkeep
-!**/uploads/verification_docs/sample_*
+uploads/
+**/uploads/
